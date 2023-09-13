@@ -14,7 +14,9 @@ The following **required** functionality is completed:
 * [ ] ...
 * [ ] ...
 
-User sees a calculator screen that can be manipulated between portrait and landscape.
+User sees calculator icon
+User can click calculator icon. 
+User can rotate screen
 User can  calculate mathematical operations such as addition, subtraction, multiplication, and division but can also calculate more advanced operations such as natural log, log10, sin, cos, and tan
 
 
