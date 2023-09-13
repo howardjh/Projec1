@@ -1,86 +1,199 @@
+package com.example.projec1
+// Collaborated with Jack Howard
+import android.content.res.Configuration
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.View
+import android.util.Log
 import android.widget.Button
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import java.math.RoundingMode
+import java.util.Stack
+
+
 
 class MainActivity : AppCompatActivity() {
+    private var operandStack = Stack<String>()
+    private var operatorStack = Stack<String>()
+    private lateinit var btnNumbers: List<Button>
+    private lateinit var btnOperators: List<Button>
+    private lateinit var inputText: TextView
+    private var currentInput = ""
+    private var currentOp = ""
 
-    private lateinit var resultTextView: TextView
-    private var currentNumber = 0.0
-    private var currentOperator = ""
-    private var isNewOperation = true
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        Log.d("MainActivity", "onCreate() started")
+        if (savedInstanceState != null) {
+            // Extract bundle
+            // Restore state
+            operandStack = savedInstanceState.getSerializable("OPERAND_STACK") as Stack<String>
+            operatorStack = savedInstanceState.getSerializable("OPERATOR_STACK") as Stack<String>
+            currentInput = savedInstanceState.getSerializable("CURRENT_INPUT").toString()
+            currentOp = savedInstanceState.getSerializable("PENDING_OP").toString()
+        }
+        if(resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE){
 
-        resultTextView = findViewById(R.id.resultTextView)
-    }
+            // Load landscape layout
+            setContentView(R.layout.activity_main)
+            btnOperators = listOf(findViewById<Button>(R.id.bPlusMinus), findViewById<Button>(R.id.bPercent), findViewById<Button>(R.id.bDivide), findViewById<Button>(R.id.bMultiply), findViewById<Button>(R.id.bSubtract), findViewById<Button>(R.id.bPlus), findViewById<Button>(R.id.bSin), findViewById<Button>(R.id.bCos), findViewById<Button>(R.id.bTan), findViewById<Button>(R.id.bLog10), findViewById<Button>(R.id.bLn))
+            Log.d("ButtonOperatorIDs", btnOperators.toString())
+            btnOperators.forEach { id ->
+                Log.d("ButtonNumberIDs", id.toString())
+            }
+        } else {
 
-    fun onNumberClick(view: View) {
-        if (isNewOperation) {
-            resultTextView.text = ""
-            isNewOperation = false
+            // Load portrait layout
+            setContentView(R.layout.activity_main)
+            btnOperators = listOf(findViewById<Button>(R.id.bPlusMinus), findViewById<Button>(R.id.bPercent), findViewById<Button>(R.id.bDivide), findViewById<Button>(R.id.bMultiply), findViewById<Button>(R.id.bSubtract), findViewById<Button>(R.id.bPlus))
+            Log.d("ButtonOperatorIDs", btnOperators.toString())
+            btnOperators.forEach { id ->
+                Log.d("ButtonNumberIDs", id.toString())
+            }
+        }
+        val decimal = findViewById<Button>(R.id.bDecimal)
+        val clear = findViewById<Button>(R.id.bClear)
+        val equals = findViewById<Button>(R.id.bEquals)
+        btnNumbers = listOf(findViewById<Button>(R.id.b0), findViewById<Button>(R.id.b1),findViewById<Button>(R.id.b2),findViewById<Button>(R.id.b3),findViewById<Button>(R.id.b4),findViewById<Button>(R.id.b5),findViewById<Button>(R.id.b6),findViewById<Button>(R.id.b7),findViewById<Button>(R.id.b8),findViewById<Button>(R.id.b9))
+        Log.d("ButtonNumberIDs", btnNumbers.toString())
+        btnNumbers.forEach { id ->
+            Log.d("ButtonNumberIDs", id.toString())
         }
 
-        val button = view as Button
-        val number = button.text.toString()
-        val currentText = resultTextView.text.toString()
+        inputText = findViewById(R.id.tvResults)
 
-        // Handle the special case of the 0 button
-        if (number == "0" && currentText == "0") {
-            return
+        if(btnNumbers != null) {
+            btnNumbers.forEach { btn ->
+                btn.setOnClickListener {
+                    inputText.text = inputText.text.toString() + btn.text
+                    currentInput = inputText.text.toString()
+
+                }
+            }
         }
 
-        // Append the clicked number to the current text
-        resultTextView.text = currentText + number
-    }
-
-    fun onOperatorClick(view: View) {
-        val button = view as Button
-        val operator = button.text.toString()
-
-        if (!isNewOperation) {
-            performCalculation()
+        if(btnOperators != null) {
+            btnOperators.forEach { btn ->
+                btn.setOnClickListener {
+                    Log.d("OperandStack", "${operandStack.size}")
+                    Log.d("OperatorStack", "${operatorStack.size}")
+                    currentOp = btn.text.toString()
+                    operatorStack.push(btn.text.toString())
+                    operandStack.push(currentInput)
+                    currentInput = ""
+                    inputText.text = ""
+                    Log.d("OperandStack", "${operandStack.size}")
+                    Log.d("OperatorStack", "${operatorStack.size}")
+                }
+            }
         }
 
-        currentNumber = resultTextView.text.toString().toDouble()
-        currentOperator = operator
-        isNewOperation = true
-    }
+        decimal?.setOnClickListener {
+            if (currentInput.isNotEmpty()) {
+                currentInput += "."
+                inputText.text = inputText.text.toString() + "."
+            }
+        }
 
-    fun onEqualClick(view: View) {
-        if (!isNewOperation) {
-            performCalculation()
-            isNewOperation = true
+
+        equals?.setOnClickListener {
+            operandStack.push(currentInput)
+            var result = 0.0
+            Log.d("OperandStack", "${operandStack.size}")
+            Log.d("OperatorStack", "${operatorStack.size}")
+            while(operatorStack.isNotEmpty()) {
+                val op = operatorStack.pop()
+                if (isBinaryOperation(op)) {
+                    val operand1 = operandStack.pop()
+                    val operand2 = operandStack.pop()
+                    result = operate(op, operand1.toDouble(), operand2.toDouble())
+                    Log.d("OperandStack", "${operandStack.size}")
+                    Log.d("OperatorStack", "${operatorStack.size}")
+                } else {
+                    val operand = operandStack.pop()
+                    result = operate(op, operand.toDouble())
+                    Log.d("OperandStack", "${operandStack.size}")
+                    Log.d("OperatorStack", "${operatorStack.size}")
+                }
+            }
+            Log.d("OperandStack", "${operandStack.size}")
+            Log.d("OperatorStack", "${operatorStack.size}")
+            val scale = 2
+            val roundingMode = RoundingMode.HALF_UP
+            val resultString = result.toString()
+            inputText.text = resultString
+            currentOp = ""
+            currentInput = ""
+
+        }
+        clear.setOnClickListener {
+            inputText.text = ""
+            currentOp = ""
+            currentInput = ""
+            operatorStack.removeAllElements()
         }
     }
 
-    fun performCalculation() {
-        val newNumber = resultTextView.text.toString().toDouble()
-        when (currentOperator) {
-            "+" -> currentNumber += newNumber
-            "-" -> currentNumber -= newNumber
-            "*" -> currentNumber *= newNumber
-            "/" -> currentNumber /= newNumber
-            "%" -> currentNumber = (currentNumber * newNumber) / 100.0
+
+
+    private fun operate(op: String, vararg operands: Double): Double {
+        return when(op) {
+            "+" -> {
+                (operands[0] + operands[1]).toDouble()
+            }
+
+            "-" -> {
+                (operands[1] - operands[0]).toDouble()
+            }
+
+            "×" -> {
+                (operands[0] * operands[1]).toDouble()
+            }
+            "/" -> {
+                (operands[1] / operands[0]).toDouble()
+            }
+            "sin" -> {
+                kotlin.math.sin(operands[0].toDouble())
+            }
+            "cos" -> {
+                kotlin.math.cos(operands[0].toDouble())
+            }
+            "tan" -> {
+                kotlin.math.tan(operands[0].toDouble())
+            }
+            "Log 10" -> {
+                kotlin.math.log10(operands[0].toDouble())
+            }
+            "ln" -> {
+                kotlin.math.ln(operands[0].toDouble())
+            }
+            "+/-" -> {
+                (operands[0].toDouble() * -1)
+            }
+            "%" -> {
+                (operands[0].toDouble() / 100)
+            }
+            else -> {
+                throw IllegalArgumentException("Invalid operation $op")
+            }
         }
-        resultTextView.text = currentNumber.toString()
+    }
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putSerializable("OPERAND_STACK", operandStack)
+        outState.putSerializable("OPERATOR_STACK", operatorStack)
+        outState.putString("CURRENT_INPUT", currentInput)
+        outState.putString("PENDING_OP", currentOp)
+    }
+    private fun isBinaryOperation(op: String): Boolean{
+        return when(op){
+            "+","-","×","/" -> true
+            else -> false
+        }
     }
 
-    fun onClearClick(view: View) {
-        resultTextView.text = "0"
-        currentNumber = 0.0
-        currentOperator = ""
-        isNewOperation = true
-    }
 
-    fun onPlusMinusClick(view: View) {
-        val currentText = resultTextView.text.toString()
-        if (currentText.isNotEmpty() && currentText != "0") {
-            currentNumber = -currentText.toDouble()
-            resultTextView.text = currentNumber.toString()
-        }
-    }
 }
+
+
