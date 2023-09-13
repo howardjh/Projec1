@@ -1,5 +1,5 @@
 package com.example.projec1
-// Collaborated with Jack Howard
+// Collaborated with Stephen French
 import android.content.res.Configuration
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
